@@ -1,23 +1,59 @@
 services:
-     app:
-       build: .
-       image: devops-mini-flask:day2
-       container_name: flask-demo
-       restart: unless-stopped
-       networks:
-         - devnet
+  app:
+    build: .
+    image: devops-mini-flask:day2
+    container_name: flask-demo
+    restart: unless-stopped
+    networks:
+      - devnet
 
-     nginx:
-       image: nginx:stable
-       container_name: nginx-proxy
-       depends_on:
-         - app
-       volumes:
-         - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-       ports:
-         - "8080:80"
-       networks:
-         - devnet
+  nginx:
+    image: nginx:stable
+    container_name: nginx-proxy
+    depends_on:
+      - app
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    networks:
+      - devnet
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    networks:
+      - devnet
+  node_exporter:
+     image: prom/node-exporter:latest
+     container_name: node_exporter
+     pid: "host"
+     ports:
+       - "9100:9100"
+     networks:
+       - devnet
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - devnet
 networks:
   devnet:
     driver: bridge
+
+volumes:
+  grafana-storage:
